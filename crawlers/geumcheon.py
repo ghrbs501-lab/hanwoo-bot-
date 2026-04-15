@@ -81,8 +81,8 @@ class GeumcheonCrawler(BaseCrawler):
 
     def _parse_item(self, item: dict, gender: str) -> CrawlResult | None:
         try:
-            wgt = item.get("invtWgt") or 0.0
-            price_total = item.get("salePrc") or 0
+            wgt = float(item.get("invtWgt") or 0)
+            price_total = int(item.get("salePrc") or 0)
             if wgt <= 0 or price_total <= 0:
                 return None
 
