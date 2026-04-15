@@ -1,7 +1,7 @@
 import os
 import tempfile
 import pytest
-from db import init_db, save_prices, get_latest_prices, get_alert_config, set_alert_config
+from db import init_db, save_prices, get_latest_prices, get_alert_config, set_alert_config, get_prices_above_weight
 
 @pytest.fixture
 def tmp_db(monkeypatch, tmp_path):
@@ -46,4 +46,33 @@ def test_set_and_get_alert_config(tmp_db):
     set_alert_config(cut="목심", grade="2등급", target_price=18000, active=True)
     config = get_alert_config()
     assert config["target_price"] == 18000
+    assert config["active"] == 1
+
+def test_get_prices_above_weight(tmp_db):
+    items = [
+        {
+            "site": "금천미트", "grade": "2등급", "cut": "목심", "gender": "암소",
+            "price_per_kg": 18500, "weight_kg": 10.2,
+            "url": "https://example.com/1", "crawled_at": "2026-04-14 09:30:00",
+        },
+        {
+            "site": "미트박스", "grade": "2등급", "cut": "목심", "gender": "거세",
+            "price_per_kg": 17000, "weight_kg": 55.0,
+            "url": "https://example.com/2", "crawled_at": "2026-04-14 09:30:00",
+        },
+    ]
+    save_prices(items)
+    results = get_prices_above_weight(50.0)
+    assert len(results) == 1
+    assert results[0]["site"] == "미트박스"
+    assert results[0]["weight_kg"] == 55.0
+
+def test_set_alert_active(tmp_db):
+    set_alert_config(cut="목심", grade="2등급", target_price=18000, active=True)
+    from db import set_alert_active, get_alert_config
+    set_alert_active(False)
+    config = get_alert_config()
+    assert config["active"] == 0
+    set_alert_active(True)
+    config = get_alert_config()
     assert config["active"] == 1
