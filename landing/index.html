@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한우 최저가 — 실시간 축산물 가격 비교</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1c1c1e;
+      --surface:  #242426;
+      --raised:   #2c2c2e;
+      --line:     #333336;
+      --line-dim: #2a2a2c;
+      --text:     #f0ede8;
+      --dim:      #9a9691;
+      --muted:    #5a5856;
+      --gold:     #c9a96e;
+      --gold-dim: rgba(201,169,110,0.12);
+      --gold-line:rgba(201,169,110,0.25);
+      --radius:   14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      height: 62px;
+      background: rgba(28,28,30,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+    }
+    .logo {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .logo-accent { color: var(--gold); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 48px 88px;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--gold-line);
+      background: var(--gold-dim);
+      padding: 7px 16px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: glow 2.4s ease-in-out infinite;
+    }
+    @keyframes glow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(201,169,110,0.4); }
+      50%      { box-shadow: 0 0 0 5px rgba(201,169,110,0); }
+    }
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 50px);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -1px;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--gold);
+    }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--dim);
+      line-height: 1.8;
+      letter-spacing: -0.1px;
+      margin-bottom: 56px;
+    }
+
+    /* 스탯 바 */
+    .stat-bar {
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .stat-cell {
+      flex: 1;
+      padding: 24px 16px;
+      text-align: center;
+      border-right: 1px solid var(--line);
+      position: relative;
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-num {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--gold);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: var(--line); }
+
+    /* ── SECTION ── */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 72px 48px;
+    }
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .section-heading {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      margin-bottom: 36px;
+      color: var(--text);
+    }
+
+    /* ── FILTER ── */
+    .filter-block {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .filter-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 28px;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--line-dim);
+    }
+    .filter-row:last-child { border-bottom: none; }
+    .filter-key {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      min-width: 36px;
+      padding-top: 10px;
+      flex-shrink: 0;
+    }
+    .chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+    .chip {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--dim);
+      background: var(--raised);
+      font-family: 'Noto Sans KR', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: -0.2px;
+    }
+    .chip:hover {
+      border-color: var(--gold-line);
+      color: var(--text);
+      background: var(--gold-dim);
+    }
+    .chip.on {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .filter-footer {
+      padding: 20px 28px;
+      background: var(--raised);
+      border-top: 1px solid var(--line-dim);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-search {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: var(--gold);
+      color: #1c1c1e;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Noto Sans KR', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: opacity 0.15s;
+    }
+    .btn-search:hover { opacity: 0.85; }
+    .btn-search svg { width: 14px; height: 14px; }
+
+    /* ── RESULT ── */
+    #result-section { display: none; }
+
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .result-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--gold);
+      border: 1px solid var(--gold-line);
+      background: var(--gold-dim);
+      padding: 5px 12px;
+      border-radius: 5px;
+    }
+    .result-time {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: auto;
+      letter-spacing: 0.3px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 780px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    .result-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px;
+      background: var(--surface);
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    }
+    .result-card:hover {
+      background: var(--raised);
+      transform: translateY(-2px);
+    }
+    .result-card.r1 { border-left-color: #c9a96e; }
+    .result-card.r2 { border-left-color: #b0b0bc; }
+    .result-card.r3 { border-left-color: #b07848; }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .card-site {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .rank-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    .r1 { background: rgba(201,169,110,0.15); color: #c9a96e; border: 1px solid rgba(201,169,110,0.35); }
+    .r2 { background: rgba(180,180,190,0.10); color: #b0b0bc; border: 1px solid rgba(180,180,190,0.25); }
+    .r3 { background: rgba(180,120,70,0.12);  color: #b07848; border: 1px solid rgba(180,120,70,0.28); }
+    .rn { background: transparent; color: var(--muted); border: 1px solid var(--line-dim); }
+
+    .card-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .card-price {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--text);
+    }
+    .card-unit {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0;
+      margin-left: 1px;
+    }
+    .card-total {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--dim);
+      letter-spacing: -0.2px;
+    }
+    .card-info {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 18px;
+      letter-spacing: 0.1px;
+    }
+    .card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--line-dim);
+    }
+    .card-cta-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.2px;
+    }
+    .card-arrow {
+      width: 26px; height: 26px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      color: var(--dim);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .result-card:hover .card-arrow {
+      border-color: var(--gold-line);
+      color: var(--gold);
+    }
+
+    .state-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .state-icon { font-size: 36px; margin-bottom: 14px; }
+    .state-text { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    /* ── TRUST ── */
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .trust-cell {
+      background: var(--surface);
+      padding: 36px 30px;
+      border-right: 1px solid var(--line);
+    }
+    .trust-cell:last-child { border-right: none; }
+    .trust-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .trust-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      margin-bottom: 10px;
+    }
+    .trust-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-logo {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .footer-copy {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+    }
+
+    @media (max-width: 680px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 64px 24px 56px; }
+      .stat-bar { flex-direction: column; }
+      .stat-cell { border-right: none; border-bottom: 1px solid var(--line); }
+      .stat-cell:last-child { border-bottom: none; }
+      .section { padding: 52px 20px; }
+      .filter-row { flex-direction: column; gap: 12px; padding: 18px 20px; }
+      .filter-footer { padding: 16px 20px; }
+      .trust-grid { grid-template-columns: 1fr; }
+      .trust-cell { border-right: none; border-bottom: 1px solid var(--line); }
+      .trust-cell:last-child { border-bottom: none; }
+      .cards-grid { grid-template-columns: 1fr; }
+      footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">한우최저가<span class="logo-accent">.</span></div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="live-dot"></span>
+    실시간 가격 업데이트
+  </div>
+  <h1>한우 <em>최저가</em>를<br>한눈에 비교하세요</h1>
+  <p class="hero-sub">미트박스 · 금천미트 · 일품한우 · 탑미트<br>4개 사이트를 동시에 검색합니다</p>
+  <div class="stat-bar">
+    <div class="stat-cell">
+      <div class="stat-num" id="stat-items">—</div>
+      <div class="stat-label">수집 매물</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">4</div>
+      <div class="stat-label">연동 사이트</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="stat-cuts">—</div>
+      <div class="stat-label">부위 종류</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FILTER -->
+<div class="section">
+  <div class="section-eyebrow">가격 조회</div>
+  <div class="section-heading">원하는 조건을 선택하세요</div>
+  <div class="filter-block">
+    <div class="filter-row">
+      <span class="filter-key">성별</span>
+      <div class="chip-wrap">
+        <button class="chip" data-g="gender" data-v="거세" onclick="pick(this)">거세우</button>
+        <button class="chip" data-g="gender" data-v="암소" onclick="pick(this)">암소</button>
+        <button class="chip" data-g="gender" data-v="수소" onclick="pick(this)">수소</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-key">등급</span>
+      <div class="chip-wrap">
+        <button class="chip" data-g="grade" data-v="1++" onclick="pick(this)">1++</button>
+        <button class="chip" data-g="grade" data-v="1+" onclick="pick(this)">1+</button>
+        <button class="chip" data-g="grade" data-v="1등급" onclick="pick(this)">1등급</button>
+        <button class="chip" data-g="grade" data-v="2등급" onclick="pick(this)">2등급</button>
+        <button class="chip" data-g="grade" data-v="3등급" onclick="pick(this)">3등급</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-key">부위</span>
+      <div class="chip-wrap" id="chips-cut"></div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-key">보관</span>
+      <div class="chip-wrap">
+        <button class="chip" data-g="storage" data-v="냉장" onclick="pick(this)">냉장</button>
+        <button class="chip" data-g="storage" data-v="냉동" onclick="pick(this)">냉동</button>
+      </div>
+    </div>
+    <div class="filter-footer">
+      <button class="btn-search" onclick="search()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="6.5" cy="6.5" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+        </svg>
+        최저가 검색
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- RESULT -->
+<div class="section" id="result-section">
+  <div class="section-eyebrow">검색 결과</div>
+  <div class="result-meta">
+    <div class="section-heading" style="margin-bottom:0">검색 결과</div>
+    <div class="result-tag" id="result-tag"></div>
+    <div class="result-tag" id="result-count" style="display:none"></div>
+    <div class="result-time" id="result-time"></div>
+  </div>
+  <div id="result-list"></div>
+</div>
+
+<div class="divider" id="result-divider" style="display:none"></div>
+
+<!-- TRUST -->
+<div class="section">
+  <div class="section-eyebrow">서비스 소개</div>
+  <div class="section-heading">신뢰할 수 있는 가격 정보</div>
+  <div class="trust-grid">
+    <div class="trust-cell">
+      <div class="trust-num">01</div>
+      <div class="trust-title">실시간 직접 수집</div>
+      <div class="trust-desc">각 사이트에서 직접 크롤링한 데이터만 사용합니다. 광고나 제휴 없이 순수 가격만 비교합니다.</div>
+    </div>
+    <div class="trust-cell">
+      <div class="trust-num">02</div>
+      <div class="trust-title">19개 부위 전체 커버</div>
+      <div class="trust-desc">안심부터 차돌박이까지 19개 모든 부위의 최저가를 한눈에 비교할 수 있습니다.</div>
+    </div>
+    <div class="trust-cell">
+      <div class="trust-num">03</div>
+      <div class="trust-title">텔레그램 즉시 알림</div>
+      <div class="trust-desc">목표 가격에 도달하는 순간 텔레그램으로 즉시 알려드립니다. 원하는 가격을 놓치지 마세요.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<footer>
+  <div class="footer-logo">한우최저가<span style="color:var(--gold)">.</span></div>
+  <div class="footer-copy">가격은 크롤링 시점 기준이며 실제와 다를 수 있습니다</div>
+</footer>
+
+<script>
+  const API = 'http://localhost:5050';
+  const sel = { gender: null, grade: null, cut: null, storage: null };
+
+  fetch(`${API}/api/meta`)
+    .then(r => r.json())
+    .then(({ cuts }) => {
+      const wrap = document.getElementById('chips-cut');
+      cuts.forEach(cut => {
+        const b = document.createElement('button');
+        b.className = 'chip'; b.dataset.g = 'cut'; b.dataset.v = cut; b.textContent = cut;
+        b.onclick = () => pick(b); wrap.appendChild(b);
+      });
+      document.getElementById('stat-cuts').textContent = cuts.length + '개';
+    })
+    .catch(() => {
+      const fallback = ['안심','등심','채끝','목심','앞다리','꾸리살','부채살','우둔','홍두깨','설도','설깃','양지','치마살','업진살','안창살','갈비','갈비살','차돌박이','사태'];
+      const wrap = document.getElementById('chips-cut');
+      fallback.forEach(cut => {
+        const b = document.createElement('button');
+        b.className = 'chip'; b.dataset.g = 'cut'; b.dataset.v = cut; b.textContent = cut;
+        b.onclick = () => pick(b); wrap.appendChild(b);
+      });
+      document.getElementById('stat-cuts').textContent = fallback.length + '개';
+    });
+
+  fetch(`${API}/api/prices`)
+    .then(r => r.json())
+    .then(d => { document.getElementById('stat-items').textContent = (d.length * 50).toLocaleString() + '+'; })
+    .catch(() => {});
+
+  function pick(el) {
+    const g = el.dataset.g;
+    document.querySelectorAll(`[data-g="${g}"]`).forEach(c => c.classList.remove('on'));
+    if (sel[g] === el.dataset.v) { sel[g] = null; }
+    else { el.classList.add('on'); sel[g] = el.dataset.v; }
+  }
+
+  function search() {
+    const rs = document.getElementById('result-section');
+    const rd = document.getElementById('result-divider');
+    rs.style.display = 'block'; rd.style.display = 'block';
+    setTimeout(() => rs.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+    const list = document.getElementById('result-list');
+    list.innerHTML = '<div class="state-box"><div class="state-icon">🔍</div><div class="state-text">최저가를 검색하고 있습니다</div></div>';
+
+    const params = new URLSearchParams();
+    if (sel.gender)  params.set('gender', sel.gender);
+    if (sel.grade)   params.set('grade', sel.grade);
+    if (sel.cut)     params.set('cut', sel.cut);
+    if (sel.storage) params.set('storage', sel.storage);
+
+    document.getElementById('result-tag').textContent =
+      [sel.gender, sel.grade, sel.cut, sel.storage].filter(Boolean).join(' · ') || '전체';
+
+    const now = new Date();
+    document.getElementById('result-time').textContent =
+      `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 기준`;
+
+    fetch(`${API}/api/prices?${params}`)
+      .then(r => r.json())
+      .then(render)
+      .catch(() => {
+        list.innerHTML = '<div class="state-box"><div class="state-icon">⚠️</div><div class="state-text">API 서버에 연결할 수 없습니다<br>서버가 실행 중인지 확인해주세요</div></div>';
+      });
+  }
+
+  function rankColor(i) {
+    if (i >= 10) return { border: 'var(--line)', width: '1px', pillBg: 'transparent', pillText: 'var(--muted)', pillBorder: 'var(--line-dim)' };
+    const a = +(1.0 - i * 0.085).toFixed(2);          // 불투명도: 1.0 → ~0.24
+    const w = +(Math.max(2, 5 - i * 0.34)).toFixed(1); // 두께: 5px → 2px
+    return {
+      border:     `rgba(201,169,110,${a})`,
+      width:      `${w}px`,
+      pillBg:     `rgba(201,169,110,${+(a * 0.18).toFixed(2)})`,
+      pillText:   `rgba(201,169,110,${a})`,
+      pillBorder: `rgba(201,169,110,${+(a * 0.45).toFixed(2)})`,
+    };
+  }
+
+  function render(prices) {
+    const list = document.getElementById('result-list');
+    const countEl = document.getElementById('result-count');
+    if (!prices.length) {
+      countEl.style.display = 'none';
+      list.innerHTML = '<div class="state-box"><div class="state-icon">😶</div><div class="state-text">조건에 맞는 매물이 없습니다<br>다른 조건으로 다시 검색해보세요</div></div>';
+      return;
+    }
+    countEl.style.display = '';
+    countEl.textContent = `총 ${prices.length}건`;
+    list.innerHTML = `<div class="cards-grid">${
+      prices.map((p, i) => {
+        const c = rankColor(i);
+        const total = Math.round(p.weight_kg * p.price_per_kg).toLocaleString();
+        return `
+          <a class="result-card" style="border-left-color:${c.border};border-left-width:${c.width}"
+             href="${p.url}" target="_blank" rel="noopener noreferrer">
+            <div class="card-header">
+              <span class="card-site">${p.site}</span>
+              <span class="rank-pill"
+                style="background:${c.pillBg};color:${c.pillText};border-color:${c.pillBorder}">${i + 1}위</span>
+            </div>
+            <div class="card-price-row">
+              <span class="card-price">${p.price_per_kg.toLocaleString()}<span class="card-unit">원/kg</span></span>
+              <span class="card-total">총 ${total}원</span>
+            </div>
+            <div class="card-info">${p.weight_kg}kg &nbsp;·&nbsp; ${p.gender} &nbsp;·&nbsp; ${p.cut} &nbsp;·&nbsp; ${p.grade}</div>
+            <div class="card-cta">
+              <span class="card-cta-label">상품 페이지로 이동</span>
+              <span class="card-arrow">→</span>
+            </div>
+          </a>`;
+      }).join('')
+    }</div>`;
+  }
+</script>
+</body>
+</html>
