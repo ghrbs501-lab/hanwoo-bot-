@@ -1,9 +1,18 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+import os
 import db
 
 app = Flask(__name__)
 CORS(app)
+
+@app.route("/")
+def index():
+    return send_from_directory("landing", "index.html")
+
+@app.route("/landing/<path:filename>")
+def landing_static(filename):
+    return send_from_directory("landing", filename)
 
 
 @app.route("/api/summary")
