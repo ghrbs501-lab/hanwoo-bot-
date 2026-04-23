@@ -32,6 +32,16 @@ def init_db():
                 active BOOLEAN NOT NULL DEFAULT TRUE
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS daily_lowest (
+                id SERIAL PRIMARY KEY,
+                recorded_date DATE NOT NULL,
+                cut TEXT NOT NULL,
+                grade TEXT NOT NULL,
+                price_per_kg INTEGER NOT NULL,
+                UNIQUE (recorded_date, cut, grade)
+            )
+        """)
 
 
 def save_prices(items: list[dict]):
@@ -40,6 +50,29 @@ def save_prices(items: list[dict]):
             INSERT INTO prices (site, grade, cut, gender, price_per_kg, weight_kg, url, crawled_at, storage)
             VALUES (%(site)s, %(grade)s, %(cut)s, %(gender)s, %(price_per_kg)s, %(weight_kg)s, %(url)s, %(crawled_at)s, %(storage)s)
         """, items)
+
+
+def replace_current_prices(items: list[dict]):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM prices")
+        conn.executemany("""
+            INSERT INTO prices (site, grade, cut, gender, price_per_kg, weight_kg, url, crawled_at, storage)
+            VALUES (%(site)s, %(grade)s, %(cut)s, %(gender)s, %(price_per_kg)s, %(weight_kg)s, %(url)s, %(crawled_at)s, %(storage)s)
+        """, items)
+
+
+def snapshot_daily_lowest(recorded_date: str):
+    """prices 테이블에서 부위+등급별 최저가를 daily_lowest에 저장 (전날 날짜로)"""
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO daily_lowest (recorded_date, cut, grade, price_per_kg)
+            SELECT %s, cut, grade, MIN(price_per_kg)
+            FROM prices
+            WHERE grade != '미확인'
+            GROUP BY cut, grade
+            ON CONFLICT (recorded_date, cut, grade) DO UPDATE
+                SET price_per_kg = EXCLUDED.price_per_kg
+        """, (recorded_date,))
 
 
 def get_latest_prices() -> list[dict]:

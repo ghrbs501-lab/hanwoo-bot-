@@ -61,8 +61,7 @@ class MeatboxCrawler(BaseCrawler):
                         gender = GENDER_MAP.get(product.get("itemKindName", ""), default_gender)
                         cattle = product.get("itemCattleInfo", {}) or {}
                         qgrade = cattle.get("qgrade", "")
-                        wgrade = cattle.get("wgrade", "")
-                        grade = f"{qgrade}등급{wgrade}" if wgrade else (f"{qgrade}등급" if qgrade else "미확인")
+                        grade = f"{qgrade}등급" if qgrade else "미확인"
                         url = PRODUCT_URL.format(product_seq)
                         storage = self._infer_storage(product)
 

@@ -106,10 +106,9 @@ class GeumcheonCrawler(BaseCrawler):
         # lsprdGrdCd: "1","2","3" = 일반 등급, "A"=1++ 추정
         QGRADE_MAP = {"1": "1", "2": "2", "3": "3", "A": "1++", "B": "1+"}
         qraw   = item.get("lsprdGrdCd", "")
-        wgrade = item.get("korthsMwgtGrdCd", "")  # A,B,C
         qgrade = QGRADE_MAP.get(qraw, qraw)
         if qgrade:
-            return f"{qgrade}등급{wgrade}" if wgrade else f"{qgrade}등급"
+            return f"{qgrade}등급"
         return "미확인"
 
     def _is_correct_cut(self, goods_nm: str, expected_cut: str) -> bool:
