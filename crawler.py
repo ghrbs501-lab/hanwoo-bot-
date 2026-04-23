@@ -7,7 +7,6 @@ import alert
 from crawlers.geumcheon import GeumcheonCrawler
 from crawlers.meatbox import MeatboxCrawler
 from crawlers.ilpoom import IlpoomCrawler
-from crawlers.topmeat import TopMeatCrawler
 
 logging.basicConfig(
     handlers=[
@@ -27,7 +26,6 @@ CRAWLERS = [
     GeumcheonCrawler(),
     MeatboxCrawler(),
     IlpoomCrawler(),
-    TopMeatCrawler(),
 ]
 
 _fail_counts: dict[str, int] = {}
