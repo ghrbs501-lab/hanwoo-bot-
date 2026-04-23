@@ -5,13 +5,8 @@ import config
 
 def get_conn():
     return psycopg.connect(
-        host=config.DB_HOST,
-        port=config.DB_PORT,
-        dbname=config.DB_NAME,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD,
+        config.DATABASE_URL,
         row_factory=dict_row,
-        sslmode="require",
     )
 
 
