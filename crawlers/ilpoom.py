@@ -58,7 +58,8 @@ class IlpoomCrawler(BaseCrawler):
     def _fetch_category(self, gender: str, cat: str) -> list[CrawlResult]:
         results = []
         page = 1
-        while True:
+        MAX_PAGES = 2
+        while page <= MAX_PAGES:
             resp = requests.get(
                 LIST_URL,
                 params={"page": page, "searchMode": "catalog", "category": cat,
