@@ -9,6 +9,12 @@ KAMIS_API_KEY = os.environ.get("KAMIS_API_KEY", "")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
+DB_HOST     = os.environ.get("DB_HOST", "")
+DB_PORT     = int(os.environ.get("DB_PORT", "5432"))
+DB_NAME     = os.environ.get("DB_NAME", "postgres")
+DB_USER     = os.environ.get("DB_USER", "")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+
 TARGET_CUT = "목심"
 TARGET_GRADE = "2등급"
 
