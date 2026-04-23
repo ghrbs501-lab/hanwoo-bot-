@@ -62,13 +62,14 @@ def replace_current_prices(items: list[dict]):
 
 
 def snapshot_daily_lowest(recorded_date: str):
-    """prices 테이블에서 부위+등급별 최저가를 daily_lowest에 저장 (전날 날짜로)"""
+    """prices 테이블에서 거세우 기준 부위+등급별 최저가를 daily_lowest에 저장 (전날 날짜로)"""
     with get_conn() as conn:
         conn.execute("""
             INSERT INTO daily_lowest (recorded_date, cut, grade, price_per_kg)
             SELECT %s, cut, grade, MIN(price_per_kg)
             FROM prices
             WHERE grade != '미확인'
+              AND gender = '거세'
             GROUP BY cut, grade
             ON CONFLICT (recorded_date, cut, grade) DO UPDATE
                 SET price_per_kg = EXCLUDED.price_per_kg
