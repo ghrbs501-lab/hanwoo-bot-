@@ -1,5 +1,6 @@
 import re
 import logging
+import signal
 from playwright.sync_api import sync_playwright
 from crawlers.base import BaseCrawler, CrawlResult
 
@@ -48,9 +49,18 @@ CATEGORIES = {
 }
 
 
+TOTAL_TIMEOUT_SEC = 180  # 탑미트 전체 크롤링 최대 3분
+
+
 class TopMeatCrawler(BaseCrawler):
     def fetch(self) -> list[CrawlResult]:
         results = []
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError(f"[{SITE_NAME}] 전체 크롤링 {TOTAL_TIMEOUT_SEC}초 초과")
+
+        signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(TOTAL_TIMEOUT_SEC)
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -62,15 +72,18 @@ class TopMeatCrawler(BaseCrawler):
                     except Exception as e:
                         logger.error(f"[{SITE_NAME}] {gender} {cut} 실패: {e}")
                 browser.close()
+        except TimeoutError as e:
+            logger.warning(str(e))
         except Exception as e:
             logger.error(f"[{SITE_NAME}] 크롤링 실패: {e}")
+        finally:
+            signal.alarm(0)
         return results
 
     def _fetch_category(self, page, gender: str, cut: str, ca_id: str) -> list[CrawlResult]:
-        # 등급 필터 없이 전체 조회
         url = f"{LIST_URL}?ca_id={ca_id}&per_page=100"
-        page.goto(url, timeout=20000)
-        page.wait_for_timeout(2000)
+        page.goto(url, timeout=8000)
+        page.wait_for_timeout(1000)
         return self._parse(page.content(), gender, cut)
 
     def _parse(self, html: str, gender: str, cut: str) -> list[CrawlResult]:
