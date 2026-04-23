@@ -7,7 +7,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 KAMIS_API_KEY = os.environ.get("KAMIS_API_KEY", "")
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "hanwoo.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 TARGET_CUT = "목심"
 TARGET_GRADE = "2등급"

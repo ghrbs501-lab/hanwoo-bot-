@@ -40,20 +40,12 @@ def prices():
 @app.route("/api/meta")
 def meta():
     """DB에 실제 존재하는 선택지 반환 (프론트 드롭다운 동적 구성용)"""
-    import sqlite3, config
-    conn = sqlite3.connect(config.DB_PATH)
-    conn.row_factory = sqlite3.Row
-
-    def distinct(col):
-        return [r[0] for r in conn.execute(f"SELECT DISTINCT {col} FROM prices ORDER BY {col}").fetchall()]
-
     data = {
-        "grades":   distinct("grade"),
-        "cuts":     distinct("cut"),
-        "genders":  distinct("gender"),
-        "storages": distinct("storage"),
+        "grades":   db.get_distinct("grade"),
+        "cuts":     db.get_distinct("cut"),
+        "genders":  db.get_distinct("gender"),
+        "storages": db.get_distinct("storage"),
     }
-    conn.close()
     return jsonify(data)
 
 
