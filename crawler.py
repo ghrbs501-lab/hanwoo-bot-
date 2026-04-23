@@ -1,3 +1,4 @@
+import os
 import logging
 import logging.handlers
 from datetime import datetime, timezone, timedelta
@@ -8,6 +9,7 @@ from crawlers.geumcheon import GeumcheonCrawler
 from crawlers.meatbox import MeatboxCrawler
 from crawlers.ilpoom import IlpoomCrawler
 
+os.makedirs(os.path.dirname(config.LOG_PATH), exist_ok=True)
 logging.basicConfig(
     handlers=[
         logging.handlers.RotatingFileHandler(
