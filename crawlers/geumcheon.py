@@ -71,8 +71,9 @@ class GeumcheonCrawler(BaseCrawler):
         results = []
         page_no = 1
         total = None
+        MAX_PAGES = 2
 
-        while True:
+        while page_no <= MAX_PAGES:
             payload = {
                 "dispCtgNoList": ctg_list,
                 "brandNoList": [], "lsprdGrdCdList": [],
