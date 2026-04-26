@@ -19,7 +19,7 @@ async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for p in prices:
         if p['site'] not in seen:
             seen[p['site']] = p
-    lines = ["📊 2등급 목심 사이트별 최저가\n"]
+    lines = ["📊 사이트별 최저가 매물\n"]
     for p in seen.values():
         lines.append(
             f"📍 {p['site']}\n"

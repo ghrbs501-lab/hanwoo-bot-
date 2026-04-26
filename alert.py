@@ -30,7 +30,11 @@ def check_and_notify(prices: list[dict], config_row: dict):
     if not config_row or not config_row["active"]:
         return
     target = config_row["target_price"]
+    target_cut = config_row["cut"]
+    target_grade = config_row["grade"]
     for item in prices:
+        if item["cut"] != target_cut or item["grade"] != target_grade:
+            continue
         if item["price_per_kg"] <= target:
             msg = format_alert_message(item, target)
             try:

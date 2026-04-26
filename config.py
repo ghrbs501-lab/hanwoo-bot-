@@ -7,7 +7,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 KAMIS_API_KEY = os.environ.get("KAMIS_API_KEY", "")
 
-DATABASE_URL = os.environ.get("DB_CONN_URL", "")
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("DB_CONN_URL", "")
 
 DB_HOST     = os.environ.get("DB_HOST", "")
 DB_PORT     = int(os.environ.get("DB_PORT", "5432"))

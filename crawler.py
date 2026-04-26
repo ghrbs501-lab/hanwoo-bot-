@@ -64,12 +64,6 @@ def run():
     hour = now_kst.hour
     logger.info(f"크롤링 시작 — KST {now_kst.strftime('%H:%M')}")
 
-    if hour == 9:
-        # 전날 16시 데이터를 히스토리에 저장 후 교체
-        yesterday = (now_kst - timedelta(days=1)).strftime("%Y-%m-%d")
-        db.snapshot_daily_lowest(yesterday)
-        logger.info(f"[daily_lowest] {yesterday} 스냅샷 저장 완료")
-
     all_items = _crawl_all()
 
     if not all_items:
@@ -82,6 +76,11 @@ def run():
     except Exception as e:
         logger.error(f"DB 저장 실패: {e}")
         return
+
+    if hour == 9:
+        today = now_kst.strftime("%Y-%m-%d")
+        db.snapshot_daily_lowest(today)
+        logger.info(f"[daily_lowest] {today} 스냅샷 저장 완료")
 
     prices = db.get_latest_prices()
     config_row = db.get_alert_config()

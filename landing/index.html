@@ -473,14 +473,14 @@
     실시간 가격 업데이트
   </div>
   <h1>한우 <em>최저가</em>를<br>한눈에 비교하세요</h1>
-  <p class="hero-sub">미트박스 · 금천미트 · 일품한우 · 탑미트<br>4개 사이트를 동시에 검색합니다</p>
+  <p class="hero-sub">미트박스 · 금천미트 · 일품한우<br>3개 사이트를 동시에 검색합니다</p>
   <div class="stat-bar">
     <div class="stat-cell">
       <div class="stat-num" id="stat-items">—</div>
       <div class="stat-label">수집 매물</div>
     </div>
     <div class="stat-cell">
-      <div class="stat-num">4</div>
+      <div class="stat-num">3</div>
       <div class="stat-label">연동 사이트</div>
     </div>
     <div class="stat-cell">
@@ -509,7 +509,7 @@
       <span class="filter-key">등급</span>
       <div class="chip-wrap">
         <button class="chip" data-g="grade" data-v="1++" onclick="pick(this)">1++</button>
-        <button class="chip" data-g="grade" data-v="1+" onclick="pick(this)">1+</button>
+        <button class="chip" data-g="grade" data-v="1+등급" onclick="pick(this)">1+</button>
         <button class="chip" data-g="grade" data-v="1등급" onclick="pick(this)">1등급</button>
         <button class="chip" data-g="grade" data-v="2등급" onclick="pick(this)">2등급</button>
         <button class="chip" data-g="grade" data-v="3등급" onclick="pick(this)">3등급</button>
@@ -587,31 +587,29 @@
   const API = '';
   const sel = { gender: null, grade: null, cut: null, storage: null };
 
+  const FALLBACK_CUTS = ['안심','등심','채끝','목심','앞다리','꾸리살','부채살','우둔','홍두깨','설도','설깃','양지','치마살','업진살','앞치마살','업진안살','안창살','갈비','갈비살','차돌박이','사태','토시살','제비추리'];
+
+  function renderCutChips(cuts) {
+    const wrap = document.getElementById('chips-cut');
+    cuts.forEach(cut => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.dataset.g = 'cut'; b.dataset.v = cut; b.textContent = cut;
+      b.onclick = () => pick(b); wrap.appendChild(b);
+    });
+    document.getElementById('stat-cuts').textContent = cuts.length + '개';
+  }
+
   fetch(`${API}/api/meta`)
     .then(r => r.json())
     .then(({ cuts }) => {
-      const wrap = document.getElementById('chips-cut');
-      cuts.forEach(cut => {
-        const b = document.createElement('button');
-        b.className = 'chip'; b.dataset.g = 'cut'; b.dataset.v = cut; b.textContent = cut;
-        b.onclick = () => pick(b); wrap.appendChild(b);
-      });
-      document.getElementById('stat-cuts').textContent = cuts.length + '개';
+      if (!cuts || cuts.length === 0) throw new Error('empty');
+      renderCutChips(cuts);
     })
-    .catch(() => {
-      const fallback = ['안심','등심','채끝','목심','앞다리','꾸리살','부채살','우둔','홍두깨','설도','설깃','양지','치마살','업진살','안창살','갈비','갈비살','차돌박이','사태'];
-      const wrap = document.getElementById('chips-cut');
-      fallback.forEach(cut => {
-        const b = document.createElement('button');
-        b.className = 'chip'; b.dataset.g = 'cut'; b.dataset.v = cut; b.textContent = cut;
-        b.onclick = () => pick(b); wrap.appendChild(b);
-      });
-      document.getElementById('stat-cuts').textContent = fallback.length + '개';
-    });
+    .catch(() => renderCutChips(FALLBACK_CUTS));
 
   fetch(`${API}/api/prices`)
     .then(r => r.json())
-    .then(d => { document.getElementById('stat-items').textContent = (d.length * 50).toLocaleString() + '+'; })
+    .then(d => { document.getElementById('stat-items').textContent = d.length.toLocaleString() + '+'; })
     .catch(() => {});
 
   function pick(el) {

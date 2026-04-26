@@ -1,4 +1,6 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import requests
 from crawlers.base import BaseCrawler, CrawlResult
 
@@ -8,6 +10,8 @@ SITE_NAME = "미트박스"
 SEARCH_URL = "https://mb-api.meatbox.co.kr/product/api/v1/search/filter"
 ITEMS_URL  = "https://mb-api.meatbox.co.kr/product/api/v1/items/{}/retrieves"
 PRODUCT_URL = "https://www.meatbox.co.kr/fo/product/productViewPage.do?productSeq={}"
+
+MAX_WORKERS = 20
 
 # 성별별 catCd → 부위명 (각 성별마다 코드 체계가 다름)
 GENDER_CATS = {
@@ -36,7 +40,6 @@ GENDER_NAMES = {10000: "암소", 10001: "거세", 10002: "수소"}
 
 GENDER_MAP = {
     "한우암소": "암소", "한우거세": "거세", "한우수소": "수소",
-    "육우암소": "암소", "육우거세": "거세",
 }
 
 HEADERS = {
@@ -50,33 +53,56 @@ HEADERS = {
 
 class MeatboxCrawler(BaseCrawler):
     def fetch(self) -> list[CrawlResult]:
-        results = []
-        for seq, cats in GENDER_CATS.items():
-            default_gender = GENDER_NAMES[seq]
-            for cat_cd, cut_name in cats.items():
+        # Step 1: 카테고리별 상품 목록 병렬 수집
+        cat_tasks = [
+            (seq, cat_cd, cut_name)
+            for seq, cats in GENDER_CATS.items()
+            for cat_cd, cut_name in cats.items()
+        ]
+
+        product_tasks = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(self._fetch_products, cat_cd, seq): (seq, cut_name)
+                for seq, cat_cd, cut_name in cat_tasks
+            }
+            for future in as_completed(futures):
+                seq, cut_name = futures[future]
+                default_gender = GENDER_NAMES[seq]
                 try:
-                    products = self._fetch_products(cat_cd, seq)
+                    products = future.result()
                     for product in products:
-                        product_seq = product["productSeq"]
-                        gender = GENDER_MAP.get(product.get("itemKindName", ""), default_gender)
-                        cattle = product.get("itemCattleInfo", {}) or {}
-                        qgrade = cattle.get("qgrade", "")
-                        grade = f"{qgrade}등급" if qgrade else "미확인"
-                        url = PRODUCT_URL.format(product_seq)
-                        storage = self._infer_storage(product)
-
-                        try:
-                            items = self._fetch_items(product_seq)
-                        except Exception as e:
-                            logger.warning(f"[{SITE_NAME}] {product_seq} 아이템 조회 실패: {e}")
+                        if "육우" in product.get("itemKindName", ""):
                             continue
-
-                        for item in items:
-                            r = self._parse_item(item, grade, gender, cut_name, url, storage)
-                            if r:
-                                results.append(r)
+                        product_tasks.append((product, default_gender, cut_name))
                 except Exception as e:
                     logger.error(f"[{SITE_NAME}] {default_gender} {cut_name} 실패: {e}")
+
+        # Step 2: 상품별 아이템 병렬 수집
+        results = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(self._fetch_items, product["productSeq"]): (product, default_gender, cut_name)
+                for product, default_gender, cut_name in product_tasks
+            }
+            for future in as_completed(futures):
+                product, default_gender, cut_name = futures[future]
+                product_seq = product["productSeq"]
+                gender = GENDER_MAP.get(product.get("itemKindName", ""), default_gender)
+                cattle = product.get("itemCattleInfo", {}) or {}
+                qgrade = cattle.get("qgrade", "")
+                grade = f"{qgrade}등급" if qgrade else "미확인"
+                url = PRODUCT_URL.format(product_seq)
+                storage = self._infer_storage(product)
+                try:
+                    items = future.result()
+                    for item in items:
+                        r = self._parse_item(item, grade, gender, cut_name, url, storage)
+                        if r:
+                            results.append(r)
+                except Exception as e:
+                    logger.warning(f"[{SITE_NAME}] {product_seq} 아이템 조회 실패: {e}")
+
         return results
 
     def _infer_storage(self, product: dict) -> str:
